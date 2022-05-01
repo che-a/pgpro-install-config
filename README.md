@@ -9,12 +9,12 @@
 ## Исходные данные <a name="source"></a>
 ### Ссылки на ресурсы
 ### Состав
-| № | Полное имя узла   | ОС                   | ПО                       | Роль                                 |
-| - |-------------------|----------------------|--------------------------|--------------------------------------|
-| 1 | node1.pgpro.lan   | Debian 11 (bullseye) | Postgres Pro 14 Standart | Сервер СУБД                          |
-| 2 | node2.pgpro.lan   | Debian 11 (bullseye) | Postgres Pro 14 Standart | Сервер СУБД                          |
-| 3 | pgadmin.lan       | Debian 11 (bullseye) | pgadmin4                 | Серверное приложение для работы с БД |
-| 4 | ws.lan            | Debian 11 (bullseye) | psql                     | Рабочая станция                      |
+| № | Полное имя узла | IP           |ОС                    | ПО                       | Роль                                 |
+| - |-----------------|--------------|----------------------|--------------------------|--------------------------------------|
+| 1 | node1.pgpro.lan | 192.168.0.11 | Debian 11 (bullseye) | Postgres Pro 14 Standart | Сервер СУБД                          |
+| 2 | node2.pgpro.lan | 192.168.0.12 | Debian 11 (bullseye) | Postgres Pro 14 Standart | Сервер СУБД                          |
+| 3 | pgadmin.lan     | 192.168.0.13 | Debian 11 (bullseye) | pgadmin4                 | Серверное приложение для работы с БД |
+| 4 | ws.lan          | 192.168.0.14 | Debian 11 (bullseye) | psql                     | Рабочая станция                      |
 
 ### Цель <a name="target"></a>
 - Установить два экземпляра СУБД Postgres Pro на разных узлах.  

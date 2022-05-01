@@ -5,8 +5,6 @@
 3. [Справочная информация](#info)  
 4. [Выполнение](#exec)  
     - [Задача 1](#task1)  
-    - [Задача 2](#task2)
-    - [Задача 3](#task3) 
 
 ## Исходные данные <a name="source"></a>
 ### Ссылки на ресурсы
@@ -90,5 +88,3 @@ systemctl restart postgrespro-std-14.service
 ```shell
 su - postgres -c 'psql -c "\password postgres"'
 ```
-
-

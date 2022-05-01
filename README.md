@@ -9,7 +9,8 @@
     - [Задача 3](#task3) 
 
 ## Исходные данные <a name="source"></a>
-
+### Ссылки на ресурсы
+### Состав
 | № | Полное имя узла   | ОС                   | ПО                       | Роль                                 |
 | - |-------------------|----------------------|--------------------------|--------------------------------------|
 | 1 | node1.pgpro.lan   | Debian 11 (bullseye) | Postgres Pro 14 Standart | Сервер СУБД                          |
@@ -17,12 +18,14 @@
 | 3 | pgadmin.lan       | Debian 11 (bullseye) | pgadmin4                 | Серверное приложение для работы с БД |
 | 4 | ws.lan            | Debian 11 (bullseye) | psql                     | Рабочая станция                      |
 
-## Цель <a name="target"></a>
+### Цель <a name="target"></a>
 - Установить два экземпляра СУБД Postgres Pro на разных узлах.  
 - Установить приложение для работы с БД pgadmin4.  
 - Настроить шифрованное соедиение клиента с сервером.
 
-## Подготовка
+## Установка
+### Общие действия для всех узлов
+#### Подготовка
 На каждом узле необходимо выполнить следующий набор команд:
 ```shell
 apt update && \
@@ -30,7 +33,7 @@ apt upgrade -y && \
 apt install -y gnupg gnupg1 gnupg2
 ```
 
-## Настройка репозитория
+#### Настройка репозитория
 Для всех узлов:
 ```shell
 wget http://repo.postgrespro.ru/pgpro-14/keys/GPG-KEY-POSTGRESPRO && \
@@ -40,7 +43,7 @@ echo deb http://repo.postgrespro.ru/pgpro-14/debian/ bullseye main > /etc/apt/so
 apt update
 ```
 
-## Установка
+
 
 Для серверных узлов node1.pgpro и node2.pgpro:
 ```shell

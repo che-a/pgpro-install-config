@@ -9,43 +9,43 @@
 ### Состав стенда
 | № | Полное имя узла | IP           |ОС                    | ПО                       |
 | - |-----------------|--------------|----------------------|--------------------------|
-| 1 | node1.pgpro.lan | 192.168.0.11 | Debian 11 (bullseye) | Postgres Pro 14 Standart |
-| 2 | node2.pgpro.lan | 192.168.0.12 | Debian 11 (bullseye) | Postgres Pro 14 Standart |
+| 1 | pgpro-1.lan     | 192.168.0.11 | Debian 11 (bullseye) | Postgres Pro 14 Standart |
+| 2 | pgpro-2.lan     | 192.168.0.12 | Debian 11 (bullseye) | Postgres Pro 14 Standart |
 | 3 | pgadmin.lan     | 192.168.0.13 | Debian 11 (bullseye) | pgadmin4                 |
 | 4 | ws.lan          | 192.168.0.14 | Debian 11 (bullseye) | psql                     |
 
 ### Настройка стенда с использованием LXC-контейнеров в Proxmox VE
 Перед созданием LXC-контейнеров генерируем пару ключей.  
 ```sh
-ssh-keygen -t ed25519 -C "db_admin@ws.lan" -N '' -f ~/.ssh/db_admin -q 
+ssh-keygen -t ed25519 -C "training_admin@ws.lan" -N '' -f ~/.ssh/training_admin -q 
 ```
-Создаем контенейры и указываем в настройках публичный ключ `db_admin.pub`.
+Создаем контенейры и указываем в настройках публичный ключ `training_admin.pub`.
 
 Для упрощения подключенияу узлам стенда в файл `~/.ssh/config` заносим следующий текст:
 ```sh
-Host node1.pgpro
+Host pgpro-1
     HostName 192.168.0.11
     User root
     Port 22
-    IdentityFile ~/.ssh/db_admin
+    IdentityFile ~/.ssh/training_admin
 
-Host node2.pgpro
+Host pgpro-2
     HostName 192.168.0.12
     User root
     Port 22
-    IdentityFile ~/.ssh/db_admin
+    IdentityFile ~/.ssh/training_admin
 
 Host pgadmin
     HostName 192.168.0.13
     User root
     Port 22
-    IdentityFile ~/.ssh/db_admin
+    IdentityFile ~/.ssh/training_admin
     
 Host ws
     HostName 192.168.0.14
     User root
     Port 22
-    IdentityFile ~/.ssh/db_admin    
+    IdentityFile ~/.ssh/training_admin    
 ```
 ### Первичная настройка LXC-контейнера (вариант)
 ```sh

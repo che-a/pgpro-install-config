@@ -189,22 +189,21 @@ openssl x509 -req -in root.csr -text -days 3650 \
   -extfile /etc/ssl/openssl.cnf -extensions v3_ca \
   -signkey root.key -out root.crt
 
-# промежуточный
-openssl req -new -nodes -text -out intermediate.csr \
-  -keyout intermediate.key -subj "/CN=intermediate.lan"
-chmod og-rwx intermediate.key
-openssl x509 -req -in intermediate.csr -text -days 1825 \
-  -extfile /etc/ssl/openssl.cnf -extensions v3_ca \
-  -CA root.crt -CAkey root.key -CAcreateserial \
-  -out intermediate.crt
-
-# конечный
+# Сертификат сервера
 openssl req -new -nodes -text -out server.csr \
   -keyout server.key -subj "/CN=pgpro-2.lan"
 chmod og-rwx server.key
 openssl x509 -req -in server.csr -text -days 365 \
-  -CA intermediate.crt -CAkey intermediate.key -CAcreateserial \
+  -CA root.crt -CAkey root.key -CAcreateserial \
   -out server.crt
+  
+# Сертификат клиента (пользователь user1)
+openssl req -new -nodes -text -out client.csr \
+  -keyout client.key -subj "/CN=user1"
+chmod og-rwx client.key
+openssl x509 -req -in client.csr -text -days 365 \
+  -CA root.crt -CAkey root.key -CAcreateserial \
+  -out client.crt  
 ```
 Выходные файлы:  
 |  № | Файл             | Назначение                | Место хранения        |
@@ -224,11 +223,13 @@ openssl x509 -req -in server.csr -text -days 365 \
 ##### Установка сертификатов на сервер
 Файлы сертификатов необходимо поместить в каталог: `/var/lib/pgpro/std-14/data`.  
 ```sh
-scp intermediate.crt server.{key,crt} pgpro-2:/var/lib/pgpro/std-14/data/
+scp root.crt server.{key,crt} pgpro-2:/var/lib/pgpro/std-14/data/
+ssh pgpro-2 "chown postgres: /var/lib/pgpro/std-14/data/server.{key,crt} /var/lib/pgpro/std-14/data/root.crt"
+ssh pgpro-2 "chmod 600 /var/lib/pgpro/std-14/data/server.crt"
 ```
 На сервере `pgpro-2` выполнить:
 ```sh
-chown postgres: /var/lib/pgpro/std-14/data/server.{key,crt} /var/lib/pgpro/std-14/data/intermediate.crt
+chown postgres: /var/lib/pgpro/std-14/data/server.{key,crt} /var/lib/pgpro/std-14/data/root.crt
 chmod 600 /var/lib/pgpro/std-14/data/server.crt
 ```
 Настройка `TLS` в файле `/var/lib/pgpro/std-14/data/postgresql.conf`
@@ -236,7 +237,7 @@ chmod 600 /var/lib/pgpro/std-14/data/server.crt
 # - SSL -
 
 ssl = on
-ssl_ca_file = 'intermediate.crt'
+ssl_ca_file = 'root.crt'
 ssl_cert_file = 'server.crt'
 #ssl_crl_file = ''
 #ssl_crl_dir = ''
@@ -249,7 +250,19 @@ ssl_ciphers = 'HIGH:MEDIUM:+3DES:!aNULL' # allowed SSL ciphers
 #ssl_dh_params_file = ''
 #ssl_passphrase_command = ''
 #ssl_passphrase_command_supports_reload = off
+```
+```shell
+systemctl restart postgrespro-std-14.service
+```
+##### Установка сертификатов на клиент
+```sh
+ssh ws "mkdir /root/.postgresql/"
 
+scp root.crt ws:/root/.postgresql/root.crt
+scp client.key ws:/root/.postgresql/postgresql.key
+scp client.crt ws:/root/.postgresql/postgresql.crt
+
+ssh ws "chmod 600 /root/.postgresql/postgresql.key"
 ```
 
 ##### Раздел

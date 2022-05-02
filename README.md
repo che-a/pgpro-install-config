@@ -1,4 +1,4 @@
-# Памятка-инструкция по установке и настройке Postgres Pro
+# Установка и настройка Postgres Pro
 
 1. [Исходные данные](#source)  
 3. [Справочная информация](#info)  
@@ -6,6 +6,14 @@
     - [Задача 1](#task1)  
 
 ## Исходные данные <a name="source"></a>
+### Ссылки на ресурсы
+- [Защита соединений TCP/IP с применением SSL](https://postgrespro.ru/docs/postgrespro/14/ssl-tcp)
+- [Поддержка SSL](https://postgrespro.ru/docs/postgrespro/14/libpq-ssl)
+- [Файл pg_hba.conf](https://postgrespro.ru/docs/postgrespro/14/auth-pg-hba-conf)
+- [Установка и настройка pgAdmin 4 в режиме сервера](https://interface31.ru/tech_it/2021/01/ustanovka-i-nastroyka-pgadmin-4-v-rezhime-servera.html)
+- [Установка Postgres Pro 10 для 1С:Предприятие на Debian / Ubuntu](https://interface31.ru/tech_it/2018/10/ustanovka-postgresql-10-dlya-1spredpriyatie-na-debian-ubuntu.html)
+- [ Настройка PostgreSQL для работы с клиентами через SSL](http://www.zaweel.ru/2016/08/postgresql-ssl.html)
+
 ### Состав стенда
 | № | Полное имя узла | IP           |ОС                    | ПО                       |
 | - |-----------------|--------------|----------------------|--------------------------|
@@ -147,24 +155,9 @@ listen_addresses = '192.168.0.11'    # what IP address(es) to listen on;
 
 # Для pgpro-2
 listen_addresses = '192.168.0.12'    # what IP address(es) to listen on; 
-
 ```
-
-В файле `/var/lib/pgpro/std-14/data/pg_hba.conf` настраивается подключение к СУБД:
-```sh
-# Доступ к db1 с узлов pgadmin и ws
-hostssl db1             user1           192.168.0.13/32      cert
-hostssl db1             user1           192.168.0.14/32      cert
-
-# Доступ к db2 с узлов pgadmin и ws
-hostssl db2             user2           192.168.0.13/32      cert
-hostssl db2             user2           192.168.0.14/32      cert
-```
-
-
-```shell
-systemctl restart postgrespro-std-14.service
-```
+#### Настройка нешифрованного подключения
+Для `pgpro-1` настроим обычное нешифрованное соединение.
 Если не настраивать шифрованное TLS-соединие между сервером и клиентом, то в файл `/var/lib/pgpro/std-14/data/pg_hba.conf` добавляются следующие строки:
 ```sh
 # Доступ к db1 с узлов pgadmin и ws
@@ -175,8 +168,78 @@ host db1             user1           192.168.0.14/32      md5
 host db2             user2           192.168.0.13/32      md5
 host db2             user2           192.168.0.14/32      md5
 ```
-
-Чтобы иметь возможность подключаться как `postgres`, необходимо для него установить пароль:
+```shell
+systemctl restart postgrespro-std-14.service
+```
+Если в файле `/var/lib/pgpro/std-14/data/pg_hba.conf` настроено подключение пользователя `postgres`, то необходимо для него установить пароль:
 ```sh
 su - postgres -c 'psql -c "\password postgres"'
+```
+
+#### Настройка зашифрованного TLS-соединения
+Для `pgpro-2` настроим шифрованное TLS-соединение.
+
+##### Создание сертификатов
+```sh
+# корневой сертификат
+openssl req -new -nodes -text -out root.csr \
+  -keyout root.key -subj "/CN=root.lan"
+chmod og-rwx root.key
+openssl x509 -req -in root.csr -text -days 3650 \
+  -extfile /etc/ssl/openssl.cnf -extensions v3_ca \
+  -signkey root.key -out root.crt
+
+# промежуточный
+openssl req -new -nodes -text -out intermediate.csr \
+  -keyout intermediate.key -subj "/CN=intermediate.lan"
+chmod og-rwx intermediate.key
+openssl x509 -req -in intermediate.csr -text -days 1825 \
+  -extfile /etc/ssl/openssl.cnf -extensions v3_ca \
+  -CA root.crt -CAkey root.key -CAcreateserial \
+  -out intermediate.crt
+
+# конечный
+openssl req -new -nodes -text -out server.csr \
+  -keyout server.key -subj "/CN=pgpro-2.lan"
+chmod og-rwx server.key
+openssl x509 -req -in server.csr -text -days 365 \
+  -CA intermediate.crt -CAkey intermediate.key -CAcreateserial \
+  -out server.crt
+```
+Выходные файлы:  
+| № | Файл             | Назначение                | Место хранения        |
+|---|------------------|---------------------------|-----------------------|
+| 1 | root.csr         | Запрос на получение серт. |                       |
+| 2 | root.key         | Закрытый ключ             | В изолированном месте |
+| 3 | root.crt         | Сертификат корневого ЦС   | На клиенте            |
+| 4 | intermediate.csr |                           |                       |
+| 5 | intermediate.key |                           | В изолированном месте |
+| 6 | intermediate.crt |                           | На сервере            |
+| 7 | server.csr       |                           |                       |
+| 8 | server.key       |                           | На сервере            |
+| 9 | server.crt       |                           | На сервере            |
+
+
+
+##### Установка сертификатов
+
+В файле `/var/lib/pgpro/std-14/data/pg_hba.conf` узла `pgpro-2` настраивается подключение к СУБД:
+```sh
+# Доступ к db1 с узлов pgadmin и ws
+hostssl db1             user1           192.168.0.13/32      cert
+hostssl db1             user1           192.168.0.14/32      cert
+
+# Доступ к db2 с узлов pgadmin и ws
+hostssl db2             user2           192.168.0.13/32      cert
+hostssl db2             user2           192.168.0.14/32      cert
+```
+
+```shell
+systemctl restart postgrespro-std-14.service
+```
+
+#### Подключение к серверу
+Удаленное подключение консольного клиента к серверу:
+```sh
+psql -U user2 -d db1 -h pgpro-1.lan
 ```

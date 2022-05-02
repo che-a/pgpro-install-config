@@ -100,27 +100,36 @@ echo deb http://repo.postgrespro.ru/pgpro-14/debian/ bullseye main > /etc/apt/so
 apt update
 ```
 
-
-
-Для серверных узлов node1.pgpro и node2.pgpro:
+Для серверных узлов:
 ```shell
 apt install -y postgrespro-std-14
-```
-```shell
-su - postgres -c psql
 ```
 Для клиентских узлов:
 ```shell
 apt install -y postgrespro-std-14-client
-```
-Для того, чтобы вызывать бинарные файлы PostgreSQL без указания пути создадим необходимые символические ссылки:
-```shell
+
+# Для того, чтобы вызывать бинарные файлы PostgreSQL без указания пути создадим необходимые символические ссылки:
 /opt/pgpro/std-14/bin/pg-wrapper links update
+```
+## Создание пользователя и БД
+```shell
+su - postgres -c psql
+```
+```sql
+CREATE USER user1 WITH NOCREATEDB NOCREATEROLE NOSUPERUSER ENCRYPTED PASSWORD 'password1';
+CREATE DATABASE db1 WITH OWNER user1;
+
+CREATE USER user2 WITH NOCREATEDB NOCREATEROLE NOSUPERUSER ENCRYPTED PASSWORD 'password2';
+CREATE DATABASE db2 WITH OWNER user2;
+
+-- DROP DATABASE db1;
+-- DROP USER user1;
 ```
 
 ## Настройка СУБД
-смотрим где находится конфигурационнфй файл
+### Каталог с файлами настроек
 ```shell
+# Так можно узнать расположение главного конфигурационного файла
 su - postgres -c 'psql -c "SHOW config_file;"'
 ```
 ```
@@ -129,21 +138,45 @@ su - postgres -c 'psql -c "SHOW config_file;"'
  /var/lib/pgpro/std-14/data/postgresql.conf
 (1 строка)
 ```
-Файл `/var/lib/pgpro/std-14/data/postgresql.conf`
-В директиве  `listen_addresses = '192.168.0.0'` указываем IP сервера, к которому будет доступно внешнее подключение.
 
-Файл `/var/lib/pgpro/std-14/data/pg_hba.conf`
-добавляем строку для возможности удаленного подключения от 192.168.0.0 (pgAdmin)
+### Настройка подключения
+В файле `/var/lib/pgpro/std-14/data/postgresql.conf` в директиве `listen_addresses` необходимо указать IP-адрес этого же узла, к которому будет доступно внешнее подключение.
+```shell
+# Для pgpro-1
+listen_addresses = '192.168.0.11'    # what IP address(es) to listen on; 
+
+# Для pgpro-2
+listen_addresses = '192.168.0.12'    # what IP address(es) to listen on; 
+
 ```
-host    all             all             192.168.152.201/32      md5
+
+В файле `/var/lib/pgpro/std-14/data/pg_hba.conf` настраивается подключение к СУБД:
+```sh
+# Доступ к db1 с узлов pgadmin и ws
+hostssl db1             user1           192.168.0.13/32      cert
+hostssl db1             user1           192.168.0.14/32      cert
+
+# Доступ к db2 с узлов pgadmin и ws
+hostssl db2             user2           192.168.0.13/32      cert
+hostssl db2             user2           192.168.0.14/32      cert
 ```
 
 
 ```shell
 systemctl restart postgrespro-std-14.service
 ```
+Если не настраивать шифрованное TLS-соединие между сервером и клиентом, то в файл `/var/lib/pgpro/std-14/data/pg_hba.conf` добавляются следующие строки:
+```sh
+# Доступ к db1 с узлов pgadmin и ws
+host db1             user1           192.168.0.13/32      md5
+host db1             user1           192.168.0.14/32      md5
 
-Устанавливаем пароль для postgres:
-```shell
+# Доступ к db2 с узлов pgadmin и ws
+host db2             user2           192.168.0.13/32      md5
+host db2             user2           192.168.0.14/32      md5
+```
+
+Чтобы иметь возможность подключаться как `postgres`, необходимо для него установить пароль:
+```sh
 su - postgres -c 'psql -c "\password postgres"'
 ```

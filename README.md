@@ -227,11 +227,6 @@ scp root.crt server.{key,crt} pgpro-2:/var/lib/pgpro/std-14/data/
 ssh pgpro-2 "chown postgres: /var/lib/pgpro/std-14/data/server.{key,crt} /var/lib/pgpro/std-14/data/root.crt"
 ssh pgpro-2 "chmod 600 /var/lib/pgpro/std-14/data/server.crt"
 ```
-На сервере `pgpro-2` выполнить:
-```sh
-chown postgres: /var/lib/pgpro/std-14/data/server.{key,crt} /var/lib/pgpro/std-14/data/root.crt
-chmod 600 /var/lib/pgpro/std-14/data/server.crt
-```
 Настройка `TLS` в файле `/var/lib/pgpro/std-14/data/postgresql.conf`
 ```sh
 # - SSL -
@@ -263,6 +258,15 @@ scp client.key ws:/root/.postgresql/postgresql.key
 scp client.crt ws:/root/.postgresql/postgresql.crt
 
 ssh ws "chmod 600 /root/.postgresql/postgresql.key"
+```
+```sh
+ssh pgadmin "mkdir /root/.postgresql/"
+
+scp root.crt pgadmin:/root/.postgresql/root.crt
+scp client.key pgadmin:/root/.postgresql/postgresql.key
+scp client.crt pgadmin:/root/.postgresql/postgresql.crt
+
+ssh pgadmin "chmod 600 /root/.postgresql/postgresql.key"
 ```
 
 ##### Раздел

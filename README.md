@@ -207,22 +207,52 @@ openssl x509 -req -in server.csr -text -days 365 \
   -out server.crt
 ```
 Выходные файлы:  
-| № | Файл             | Назначение                | Место хранения        |
-|---|------------------|---------------------------|-----------------------|
-| 1 | root.csr         | Запрос на получение серт. |                       |
-| 2 | root.key         | Закрытый ключ             | В изолированном месте |
-| 3 | root.crt         | Сертификат корневого ЦС   | На клиенте            |
-| 4 | intermediate.csr |                           |                       |
-| 5 | intermediate.key |                           | В изолированном месте |
-| 6 | intermediate.crt |                           | На сервере            |
-| 7 | server.csr       |                           |                       |
-| 8 | server.key       |                           | На сервере            |
-| 9 | server.crt       |                           | На сервере            |
+|  № | Файл             | Назначение                | Место хранения        |
+|----|------------------|---------------------------|-----------------------|
+|  1 | root.csr         | Запрос на получение серт. |                       |
+|  2 | root.key         | Закрытый ключ             | В изолированном месте |
+|  3 | root.crt         | Сертификат корневого ЦС   | На клиенте            |
+|  4 | root.srl         |                           |                       |
+|  5 | intermediate.csr |                           |                       |
+|  6 | intermediate.key |                           | В изолированном месте |
+|  7 | intermediate.crt |                           | На сервере            |
+|  8 | intermediate.srl |                           |                       |
+|  9 | server.csr       |                           |                       |
+| 10 | server.key       |                           | На сервере            |
+| 11 | server.crt       |                           | На сервере            |
 
+##### Установка сертификатов на сервер
+Файлы сертификатов необходимо поместить в каталог: `/var/lib/pgpro/std-14/data`.  
+```sh
+scp intermediate.crt server.{key,crt} pgpro-2:/var/lib/pgpro/std-14/data/
+```
+На сервере `pgpro-2` выполнить:
+```sh
+chown postgres: /var/lib/pgpro/std-14/data/server.{key,crt} /var/lib/pgpro/std-14/data/intermediate.crt
+chmod 600 /var/lib/pgpro/std-14/data/server.crt
+```
+Настройка `TLS` в файле `/var/lib/pgpro/std-14/data/postgresql.conf`
+```sh
+# - SSL -
 
+ssl = on
+ssl_ca_file = 'intermediate.crt'
+ssl_cert_file = 'server.crt'
+#ssl_crl_file = ''
+#ssl_crl_dir = ''
+ssl_key_file = 'server.key'
+ssl_ciphers = 'HIGH:MEDIUM:+3DES:!aNULL' # allowed SSL ciphers
+#ssl_prefer_server_ciphers = on
+#ssl_ecdh_curve = 'prime256v1'
+#ssl_min_protocol_version = 'TLSv1.2'
+#ssl_max_protocol_version = ''
+#ssl_dh_params_file = ''
+#ssl_passphrase_command = ''
+#ssl_passphrase_command_supports_reload = off
 
-##### Установка сертификатов
+```
 
+##### Раздел
 В файле `/var/lib/pgpro/std-14/data/pg_hba.conf` узла `pgpro-2` настраивается подключение к СУБД:
 ```sh
 # Доступ к db1 с узлов pgadmin и ws

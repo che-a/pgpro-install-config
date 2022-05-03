@@ -15,42 +15,35 @@
 - [ Настройка PostgreSQL для работы с клиентами через SSL](http://www.zaweel.ru/2016/08/postgresql-ssl.html)
 
 ### Состав стенда
-| № | Полное имя узла | IP           |ОС                    | ПО                       |
-| - |-----------------|--------------|----------------------|--------------------------|
-| 1 | pgpro-1.lan     | 192.168.0.11 | Debian 11 (bullseye) | Postgres Pro 14 Standart |
-| 2 | pgpro-2.lan     | 192.168.0.12 | Debian 11 (bullseye) | Postgres Pro 14 Standart |
-| 3 | pgadmin.lan     | 192.168.0.13 | Debian 11 (bullseye) | pgadmin4                 |
-| 4 | ws.lan          | 192.168.0.14 | Debian 11 (bullseye) | psql                     |
+| № | Полное имя  | IP     |              |ОС                    | ПО                       |
+| - |-------------|--------|--------------|----------------------|--------------------------|
+| 1 | pgpro.lan   | сервер | 192.168.0.11 | Debian 11 (bullseye) | Postgres Pro 14 Standart |
+| 2 | pgadmin.lan | клиент | 192.168.0.12 | Debian 11 (bullseye) | pgadmin4                 |
+| 3 | psql.lan    | клиент | 192.168.0.13 | Debian 11 (bullseye) | psql                     |
 
 ### Настройка стенда с использованием LXC-контейнеров в Proxmox VE
 Перед созданием LXC-контейнеров генерируем пару ключей.  
 ```sh
-ssh-keygen -t ed25519 -C "training_admin@ws.lan" -N '' -f ~/.ssh/training_admin -q 
+ssh-keygen -t ed25519 -C "training_admin@pve.lan" -N '' -f ~/.ssh/training_admin -q 
 ```
 Создаем контенейры и указываем в настройках публичный ключ `training_admin.pub`.
 
 Для упрощения подключенияу узлам стенда в файл `~/.ssh/config` заносим следующий текст:
 ```sh
-Host pgpro-1
+Host pgpro
     HostName 192.168.0.11
     User root
     Port 22
     IdentityFile ~/.ssh/training_admin
 
-Host pgpro-2
+Host pgadmin
     HostName 192.168.0.12
     User root
     Port 22
     IdentityFile ~/.ssh/training_admin
-
-Host pgadmin
-    HostName 192.168.0.13
-    User root
-    Port 22
-    IdentityFile ~/.ssh/training_admin
     
-Host ws
-    HostName 192.168.0.14
+Host psql
+    HostName 192.168.0.13
     User root
     Port 22
     IdentityFile ~/.ssh/training_admin    
@@ -99,7 +92,7 @@ apt install -y gnupg gnupg1 gnupg2
 ```
 
 #### Настройка репозитория
-Для всех узлов:
+Для узлов `pgpro` и `psql`:
 ```shell
 wget http://repo.postgrespro.ru/pgpro-14/keys/GPG-KEY-POSTGRESPRO && \
     apt-key add GPG-KEY-POSTGRESPRO
@@ -108,11 +101,11 @@ echo deb http://repo.postgrespro.ru/pgpro-14/debian/ bullseye main > /etc/apt/so
 apt update
 ```
 
-Для серверных узлов:
+Для узла `pgpro`:
 ```shell
 apt install -y postgrespro-std-14
 ```
-Для клиентских узлов:
+Для узла `psql`:
 ```shell
 apt install -y postgrespro-std-14-client
 

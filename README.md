@@ -261,3 +261,55 @@ echo "deb https://ftp.postgresql.org/pub/pgadmin/pgadmin4/apt/$(lsb_release -cs)
 apt update
 apt install pgadmin4-web
 ```
+Далее необходимо запустить скрипт начальной настройки сервера:
+```sh
+/usr/pgadmin4/bin/setup-web.sh
+```
+
+#### Настройка HTTPS на веб-сервере
+Создание самоподписанного сертификата:
+```sh
+openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout /etc/ssl/private/pgadm4-selfsigned.key -out /etc/ssl/certs/pgadm4-selfsigned.crt
+```
+В файле `/etc/apache2/sites-available/default-ssl.conf` изменим строки:
+```sh
+SSLCertificateFile      /etc/ssl/certs/pgadm4-selfsigned.crt
+SSLCertificateKeyFile /etc/ssl/private/pgadm4-selfsigned.key
+```
+Далее необходимо создать файл `/etc/apache2/conf-available/ssl.conf` и внести в него следующие строки:
+```sh
+SSLProtocol all -SSLv3 -TLSv1 -TLSv1.1
+SSLCipherSuite ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384
+SSLHonorCipherOrder off
+SSLSessionTickets off
+
+SSLUseStapling On
+SSLStaplingCache "shmcb:logs/ssl_stapling(32768)"
+```
+```sh
+# Сохраняем изменения и включаем нужные модули, конфигурации и виртуальные хосты:
+a2enmod ssl
+a2enconf ssl
+a2ensite default-ssl
+
+# Проверяем конфигурацию Apache на ошибки:
+apachectl -t
+
+# И перезапускаем веб-сервер:
+systemctl reload apache2
+```
+
+#### Настройка автоматической переадресации с HTTP на HTTPS
+Откроем файл `/etc/apache2/sites-available/000-default.conf` и в пределах секции `VirtualHost` внесем следующие строки:
+```sh
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI}
+```
+```sh
+# Подключим необходимые модули:
+a2enmod rewrite
+
+# И перезапустим веб-сервер:
+systemctl reload apache2
+```
